@@ -14,7 +14,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -71,20 +70,9 @@ public class StockRepositoryTest {
 
     @Test
     public void testWriteSingleStockAvgTime() {
-        Collection<Stock> stocks = new ArrayList<>();
-        String id = UUID.randomUUID().toString();
-        IntStream.range(0, AVG_RUN_COUNT).forEach(i -> stocks.add(new Stock(id + i, new BigDecimal(1.5), 1)));
-
+        List<Stock> stocks = generateStocks(AVG_RUN_COUNT);
         try {
-            long totalTimeMs = 0;
-            long startTime = System.currentTimeMillis();
-            for (Stock stock : stocks) {
-                stockRepository.save(stock);
-                long endTime = System.currentTimeMillis();
-                totalTimeMs += endTime - startTime;
-                startTime = endTime;
-            }
-
+            long totalTimeMs = timeWriteStocks(stocks, 1);
             logger.info("Average run time for writing a single stock was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
             logger.info("Total time taken to write " + AVG_RUN_COUNT + " stocks was " + totalTimeMs);
         } finally {
@@ -94,24 +82,32 @@ public class StockRepositoryTest {
 
     @Test
     public void testWriteMultipleStocksAvgTime() {
-        List<Stock> stocks = new ArrayList<>();
-        String id = UUID.randomUUID().toString();
-        IntStream.range(0, AVG_RUN_COUNT).forEach(i -> stocks.add(new Stock(id + i, new BigDecimal(1.5), 1)));
-
+        List<Stock> stocks = generateStocks(AVG_RUN_COUNT);
         try {
-            long totalTimeMs = 0;
-            long startTime = System.currentTimeMillis();
-            for (int i = 0; i < AVG_RUN_COUNT; i += BATCH_COUNT) {
-                stockRepository.save(stocks.subList(i, i + BATCH_COUNT));
-                long endTime = System.currentTimeMillis();
-                totalTimeMs += endTime - startTime;
-                startTime = endTime;
-            }
-
+            long totalTimeMs = timeWriteStocks(stocks, BATCH_COUNT);
             logger.info("Average run time for writing a stock batch of " + BATCH_COUNT + " was " + (totalTimeMs / BATCH_COUNT) + "ms");
             logger.info("Total time taken to write " + AVG_RUN_COUNT + " stocks was " + totalTimeMs);
         } finally {
             stockRepository.delete(stocks);
         }
+    }
+
+    List<Stock> generateStocks(int numStocks) {
+        List<Stock> stocks = new ArrayList<>();
+        String id = UUID.randomUUID().toString();
+        IntStream.range(0, numStocks).forEach(i -> stocks.add(new Stock(id + i, new BigDecimal(1.5), 1)));
+        return stocks;
+    }
+
+    long timeWriteStocks(List<Stock> stocks, int batchCount) {
+        long totalTimeMs = 0;
+        long startTime = System.currentTimeMillis();
+        for (int i = 0; i < stocks.size(); i += batchCount) {
+            stockRepository.save(stocks.subList(i, i + batchCount));
+            long endTime = System.currentTimeMillis();
+            totalTimeMs += endTime - startTime;
+            startTime = endTime;
+        }
+        return totalTimeMs;
     }
 }
