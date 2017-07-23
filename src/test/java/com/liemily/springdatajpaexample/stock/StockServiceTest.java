@@ -14,6 +14,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -103,7 +104,24 @@ public class StockServiceTest {
         }
 
         logger.info("Average run time to find a stock was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
-        logger.info("Total time taken to find stocks with " + AVG_RUN_COUNT + " individual requests was " + totalTimeMs);
+        logger.info("Total time taken to find a stock with " + AVG_RUN_COUNT + " individual requests was " + totalTimeMs);
+    }
+
+    @Test
+    public void testFindAllStocksAvgTime() {
+        Collection<Stock> stocks = generateStocks(AVG_RUN_COUNT);
+        stockService.save(stocks);
+
+        long totalTimeMs = 0;
+        for (int i = 0; i < AVG_RUN_COUNT; i++) {
+            long startTimeMs = System.currentTimeMillis();
+            stockService.findAll();
+            long endTimeMs = System.currentTimeMillis();
+            totalTimeMs += endTimeMs - startTimeMs;
+        }
+
+        logger.info("Average run time to find all stocks was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
+        logger.info("Total time taken to find all stocks with " + AVG_RUN_COUNT + " individual requests was " + totalTimeMs);
     }
 
     List<Stock> generateStocks(int numStocks) {
