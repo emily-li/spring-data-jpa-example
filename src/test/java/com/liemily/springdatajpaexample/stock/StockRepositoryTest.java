@@ -13,7 +13,10 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 /**
  * Created by Emily Li on 23/07/2017.
@@ -27,6 +30,8 @@ public class StockRepositoryTest {
     private StockRepository stockRepository;
 
     private String stockSymbol;
+
+    private final int AVG_RUN_COUNT = 100;
 
     @Before
     public void setup() {
@@ -60,5 +65,28 @@ public class StockRepositoryTest {
         stockRepository.delete(stockSymbol);
         Stock deletedStock = stockRepository.findOne(stockSymbol);
         Assert.assertNull(deletedStock);
+    }
+
+    @Test
+    public void testWriteSingleStockAvgTime() {
+        Collection<Stock> stocks = new ArrayList<>();
+        String id = UUID.randomUUID().toString();
+        IntStream.range(0, AVG_RUN_COUNT).forEach(i -> stocks.add(new Stock(id + i, new BigDecimal(1.5), 1)));
+
+        try {
+            long totalTimeMs = 0;
+            long startTime = System.currentTimeMillis();
+            for (Stock stock : stocks) {
+                stockRepository.save(stock);
+                long endTime = System.currentTimeMillis();
+                totalTimeMs += endTime - startTime;
+                startTime = endTime;
+            }
+
+            logger.info("Average run time for writing a single stock was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
+            logger.info("Total time taken to write " + AVG_RUN_COUNT + " stocks was " + totalTimeMs);
+        } finally {
+            stockRepository.delete(stocks);
+        }
     }
 }
