@@ -97,7 +97,7 @@ public class StockServiceTest {
         long totalTimeMs = 0;
         for (int i = 0; i < AVG_RUN_COUNT; i++) {
             long startTimeMs = System.currentTimeMillis();
-            stockService.save(stock);
+            stockService.findOne(stockSymbol);
             long endTimeMs = System.currentTimeMillis();
             totalTimeMs += endTimeMs - startTimeMs;
         }
