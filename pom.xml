@@ -10,6 +10,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>1.5.4.RELEASE</version>
+        </dependency>
+
+        <dependency>
             <groupId>javax.persistence</groupId>
             <artifactId>persistence-api</artifactId>
             <version>1.0.2</version>
@@ -21,5 +27,4 @@
             <version>1.11.4.RELEASE</version>
         </dependency>
     </dependencies>
-
 </project>
