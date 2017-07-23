@@ -15,6 +15,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
@@ -31,7 +32,8 @@ public class StockRepositoryTest {
 
     private String stockSymbol;
 
-    private final int AVG_RUN_COUNT = 100;
+    private final int AVG_RUN_COUNT = 1000;
+    private final int BATCH_COUNT = 100;
 
     @Before
     public void setup() {
@@ -84,6 +86,29 @@ public class StockRepositoryTest {
             }
 
             logger.info("Average run time for writing a single stock was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
+            logger.info("Total time taken to write " + AVG_RUN_COUNT + " stocks was " + totalTimeMs);
+        } finally {
+            stockRepository.delete(stocks);
+        }
+    }
+
+    @Test
+    public void testWriteMultipleStocksAvgTime() {
+        List<Stock> stocks = new ArrayList<>();
+        String id = UUID.randomUUID().toString();
+        IntStream.range(0, AVG_RUN_COUNT).forEach(i -> stocks.add(new Stock(id + i, new BigDecimal(1.5), 1)));
+
+        try {
+            long totalTimeMs = 0;
+            long startTime = System.currentTimeMillis();
+            for (int i = 0; i < AVG_RUN_COUNT; i += BATCH_COUNT) {
+                stockRepository.save(stocks.subList(i, i + BATCH_COUNT));
+                long endTime = System.currentTimeMillis();
+                totalTimeMs += endTime - startTime;
+                startTime = endTime;
+            }
+
+            logger.info("Average run time for writing a stock batch of " + BATCH_COUNT + " was " + (totalTimeMs / BATCH_COUNT) + "ms");
             logger.info("Total time taken to write " + AVG_RUN_COUNT + " stocks was " + totalTimeMs);
         } finally {
             stockRepository.delete(stocks);
