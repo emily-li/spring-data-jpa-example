@@ -46,7 +46,7 @@ public class StockServiceTest {
         try {
             stockService.delete(stockSymbol);
         } catch (EmptyResultDataAccessException e) {
-            logger.info("Attempted to delete stock " + stockSymbol + " but it was already deleted");
+            logger.info("Attempted to delete stock " + stockSymbol + " but it was not present in the database");
         }
     }
 
@@ -132,18 +132,44 @@ public class StockServiceTest {
     @Test
     public void testFindAllStocksAvgTime() {
         Collection<Stock> stocks = generateStocks(AVG_RUN_COUNT);
-        stockService.save(stocks);
 
-        long totalTimeMs = 0;
-        for (int i = 0; i < AVG_RUN_COUNT; i++) {
-            long startTimeMs = System.currentTimeMillis();
-            stockService.findAll();
-            long endTimeMs = System.currentTimeMillis();
-            totalTimeMs += endTimeMs - startTimeMs;
+        try {
+            stockService.save(stocks);
+
+            long totalTimeMs = 0;
+            for (int i = 0; i < AVG_RUN_COUNT; i++) {
+                totalTimeMs += timeFindStocks();
+            }
+
+            logger.info("Average run time to find all stocks was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
+            logger.info("Total time taken to find all stocks with " + AVG_RUN_COUNT + " individual requests was " + totalTimeMs);
+        } finally {
+            stockService.delete(stocks);
         }
+    }
 
-        logger.info("Average run time to find all stocks was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
-        logger.info("Total time taken to find all stocks with " + AVG_RUN_COUNT + " individual requests was " + totalTimeMs);
+    @Test
+    public void testParallelFindAllStocksAvgTime() throws Exception {
+        Collection<Stock> stocks = generateStocks(AVG_RUN_COUNT);
+        try {
+            stockService.save(stocks);
+
+            ExecutorService executorService = Executors.newFixedThreadPool(AVG_RUN_COUNT);
+            Collection<FindAllTask> findTasks = new ArrayList<>();
+            IntStream.range(0, AVG_RUN_COUNT).forEach(i -> findTasks.add(new FindAllTask()));
+
+            List<Future<Long>> times = executorService.invokeAll(findTasks);
+
+            long totalTimeMs = 0;
+            for (Future<Long> time : times) {
+                totalTimeMs += time.get();
+            }
+
+            logger.info("Average run time to find all stocks was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
+            logger.info("Total time taken to find all stocks with " + AVG_RUN_COUNT + " individual requests was " + totalTimeMs);
+        } finally {
+            stockService.delete(stocks);
+        }
     }
 
     List<Stock> generateStocks(int numStocks) {
@@ -172,6 +198,13 @@ public class StockServiceTest {
         return endTimeMs - startTimeMs;
     }
 
+    long timeFindStocks() {
+        long startTimeMs = System.currentTimeMillis();
+        stockService.findAll();
+        long endTimeMs = System.currentTimeMillis();
+        return endTimeMs - startTimeMs;
+    }
+
     private class FindOneTask implements Callable<Long> {
         private String id;
 
@@ -182,6 +215,13 @@ public class StockServiceTest {
         @Override
         public Long call() throws Exception {
             return timeFindStock(id);
+        }
+    }
+
+    private class FindAllTask implements Callable<Long> {
+        @Override
+        public Long call() throws Exception {
+            return timeFindStocks();
         }
     }
 }
