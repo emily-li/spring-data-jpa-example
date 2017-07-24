@@ -30,8 +30,8 @@ import java.util.stream.IntStream;
 @SpringBootTest
 public class StockServiceTest {
     private static final Logger logger = LogManager.getLogger(StockServiceTest.class);
-    private final int AVG_RUN_COUNT = 100;
-    private final int BATCH_COUNT = 10;
+    private final int AVG_RUN_COUNT = 1000;
+    private final int BATCH_COUNT = 100;
     @Autowired
     private StockService stockService;
     private String stockSymbol;
@@ -166,14 +166,10 @@ public class StockServiceTest {
     }
 
     long timeFindStock(String stockSymbol) {
-        long totalTimeMs = 0;
-        for (int i = 0; i < AVG_RUN_COUNT; i++) {
-            long startTimeMs = System.currentTimeMillis();
-            stockService.findOne(stockSymbol);
-            long endTimeMs = System.currentTimeMillis();
-            totalTimeMs += endTimeMs - startTimeMs;
-        }
-        return totalTimeMs;
+        long startTimeMs = System.currentTimeMillis();
+        stockService.findOne(stockSymbol);
+        long endTimeMs = System.currentTimeMillis();
+        return endTimeMs - startTimeMs;
     }
 
     private class FindOneTask implements Callable<Long> {
