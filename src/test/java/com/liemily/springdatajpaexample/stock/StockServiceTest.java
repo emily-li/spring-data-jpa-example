@@ -17,6 +17,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
 /**
@@ -26,8 +30,8 @@ import java.util.stream.IntStream;
 @SpringBootTest
 public class StockServiceTest {
     private static final Logger logger = LogManager.getLogger(StockServiceTest.class);
-    private final int AVG_RUN_COUNT = 1000;
-    private final int BATCH_COUNT = 100;
+    private final int AVG_RUN_COUNT = 100;
+    private final int BATCH_COUNT = 10;
     @Autowired
     private StockService stockService;
     private String stockSymbol;
@@ -96,11 +100,29 @@ public class StockServiceTest {
         stockService.save(stock);
 
         long totalTimeMs = 0;
+
         for (int i = 0; i < AVG_RUN_COUNT; i++) {
-            long startTimeMs = System.currentTimeMillis();
-            stockService.findOne(stockSymbol);
-            long endTimeMs = System.currentTimeMillis();
-            totalTimeMs += endTimeMs - startTimeMs;
+            totalTimeMs += timeFindStock(stockSymbol);
+        }
+
+        logger.info("Average run time to find a stock was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
+        logger.info("Total time taken to find a stock with " + AVG_RUN_COUNT + " individual requests was " + totalTimeMs);
+    }
+
+    @Test
+    public void testParallelFindStockAvgTime() throws Exception {
+        Stock stock = new Stock(stockSymbol, new BigDecimal(1.5), 1);
+        stockService.save(stock);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(AVG_RUN_COUNT);
+        Collection<FindOneTask> findTasks = new ArrayList<>();
+        IntStream.range(0, AVG_RUN_COUNT).forEach(i -> findTasks.add(new FindOneTask(stockSymbol)));
+
+        List<Future<Long>> times = executorService.invokeAll(findTasks);
+
+        long totalTimeMs = 0;
+        for (Future<Long> time : times) {
+            totalTimeMs += time.get();
         }
 
         logger.info("Average run time to find a stock was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
@@ -141,5 +163,29 @@ public class StockServiceTest {
             startTime = endTime;
         }
         return totalTimeMs;
+    }
+
+    long timeFindStock(String stockSymbol) {
+        long totalTimeMs = 0;
+        for (int i = 0; i < AVG_RUN_COUNT; i++) {
+            long startTimeMs = System.currentTimeMillis();
+            stockService.findOne(stockSymbol);
+            long endTimeMs = System.currentTimeMillis();
+            totalTimeMs += endTimeMs - startTimeMs;
+        }
+        return totalTimeMs;
+    }
+
+    private class FindOneTask implements Callable<Long> {
+        private String id;
+
+        public FindOneTask(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public Long call() throws Exception {
+            return timeFindStock(id);
+        }
     }
 }
