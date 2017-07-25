@@ -20,12 +20,12 @@ public class StockService {
         this.stockRepository = stockRepository;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public Stock findOne(String stockSymbol) {
         return stockRepository.findOne(stockSymbol);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<Stock> findAll() {
         List<Stock> stocks = new ArrayList<>();
         Iterator<Stock> stockIterator = stockRepository.findAll().iterator();
