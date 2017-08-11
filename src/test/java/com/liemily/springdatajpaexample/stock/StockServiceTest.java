@@ -30,8 +30,7 @@ import java.util.stream.IntStream;
 @SpringBootTest
 public class StockServiceTest {
     private static final Logger logger = LogManager.getLogger(StockServiceTest.class);
-    private final int AVG_RUN_COUNT = 1000;
-    private final int BATCH_COUNT = 100;
+    private final int AVG_RUN_COUNT = 100;
     @Autowired
     private StockService stockService;
     private String stockSymbol;
@@ -84,10 +83,10 @@ public class StockServiceTest {
 
     @Test
     public void testWriteMultipleStocksAvgTime() {
-        List<Stock> stocks = generateStocks(AVG_RUN_COUNT);
+        List<Stock> stocks = generateStocks(AVG_RUN_COUNT * 10);
         try {
-            long totalTimeMs = timeWriteStocks(stocks, BATCH_COUNT);
-            logger.info("Average run time for writing a stock batch of " + BATCH_COUNT + " was " + (totalTimeMs / BATCH_COUNT) + "ms");
+            long totalTimeMs = timeWriteStocks(stocks, AVG_RUN_COUNT);
+            logger.info("Average run time for writing a stock batch of " + AVG_RUN_COUNT + " was " + (totalTimeMs / AVG_RUN_COUNT) + "ms");
             logger.info("Total time taken to write " + AVG_RUN_COUNT + " stocks was " + totalTimeMs);
         } finally {
             stockService.delete(stocks);
@@ -172,14 +171,14 @@ public class StockServiceTest {
         }
     }
 
-    List<Stock> generateStocks(int numStocks) {
+    private List<Stock> generateStocks(int numStocks) {
         List<Stock> stocks = new ArrayList<>();
         String id = UUID.randomUUID().toString();
         IntStream.range(0, numStocks).forEach(i -> stocks.add(new Stock(id + i, new BigDecimal(1.5), 1)));
         return stocks;
     }
 
-    long timeWriteStocks(List<Stock> stocks, int batchCount) {
+    private long timeWriteStocks(List<Stock> stocks, int batchCount) {
         long totalTimeMs = 0;
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < stocks.size(); i += batchCount) {
@@ -191,14 +190,14 @@ public class StockServiceTest {
         return totalTimeMs;
     }
 
-    long timeFindStock(String stockSymbol) {
+    private long timeFindStock(String stockSymbol) {
         long startTimeMs = System.currentTimeMillis();
         stockService.findOne(stockSymbol);
         long endTimeMs = System.currentTimeMillis();
         return endTimeMs - startTimeMs;
     }
 
-    long timeFindStocks() {
+    private long timeFindStocks() {
         long startTimeMs = System.currentTimeMillis();
         stockService.findAll();
         long endTimeMs = System.currentTimeMillis();
@@ -208,7 +207,7 @@ public class StockServiceTest {
     private class FindOneTask implements Callable<Long> {
         private String id;
 
-        public FindOneTask(String id) {
+        private FindOneTask(String id) {
             this.id = id;
         }
 
