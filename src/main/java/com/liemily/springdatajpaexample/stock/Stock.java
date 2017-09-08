@@ -15,7 +15,7 @@ public class Stock {
     private int volume;
 
     // Empty constructor required for JPA
-    protected Stock() {
+    private Stock() {
     }
 
     public Stock(String symbol, BigDecimal value, int volume) {
