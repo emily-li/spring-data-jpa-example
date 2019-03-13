@@ -28,8 +28,8 @@ import java.util.stream.IntStream;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class StockServiceTest {
-    private static final Logger logger = LogManager.getLogger(StockServiceTest.class);
+public class StockServiceIT {
+    private static final Logger logger = LogManager.getLogger(StockServiceIT.class);
     private final int AVG_RUN_COUNT = 100;
     @Autowired
     private StockService stockService;
@@ -51,7 +51,7 @@ public class StockServiceTest {
 
     @Test
     public void testWriteStock() {
-        Stock stock = new Stock(stockSymbol, new BigDecimal(1.5), 1);
+        Stock stock = new Stock(stockSymbol, BigDecimal.valueOf(1.5), 1);
         stockService.save(stock);
         Stock foundStock = stockService.findOne(stockSymbol);
         Assert.assertEquals(stock, foundStock);
@@ -59,7 +59,7 @@ public class StockServiceTest {
 
     @Test
     public void testDeleteStock() {
-        Stock stock = new Stock(stockSymbol, new BigDecimal(1.5), 1);
+        Stock stock = new Stock(stockSymbol, BigDecimal.valueOf(1.5), 1);
         stockService.save(stock);
         Stock foundStock = stockService.findOne(stockSymbol);
         Assert.assertEquals(stock, foundStock);
@@ -95,7 +95,7 @@ public class StockServiceTest {
 
     @Test
     public void testFindStockAvgTime() {
-        Stock stock = new Stock(stockSymbol, new BigDecimal(1.5), 1);
+        Stock stock = new Stock(stockSymbol, BigDecimal.valueOf(1.5), 1);
         stockService.save(stock);
 
         long totalTimeMs = 0;
@@ -110,7 +110,7 @@ public class StockServiceTest {
 
     @Test
     public void testParallelFindStockAvgTime() throws Exception {
-        Stock stock = new Stock(stockSymbol, new BigDecimal(1.5), 1);
+        Stock stock = new Stock(stockSymbol, BigDecimal.valueOf(1.5), 1);
         stockService.save(stock);
 
         ExecutorService executorService = Executors.newFixedThreadPool(AVG_RUN_COUNT);
@@ -174,7 +174,7 @@ public class StockServiceTest {
     private List<Stock> generateStocks(int numStocks) {
         List<Stock> stocks = new ArrayList<>();
         String id = UUID.randomUUID().toString();
-        IntStream.range(0, numStocks).forEach(i -> stocks.add(new Stock(id + i, new BigDecimal(1.5), 1)));
+        IntStream.range(0, numStocks).forEach(i -> stocks.add(new Stock(id + i, BigDecimal.valueOf(1.5), 1)));
         return stocks;
     }
 
@@ -212,14 +212,14 @@ public class StockServiceTest {
         }
 
         @Override
-        public Long call() throws Exception {
+        public Long call() {
             return timeFindStock(id);
         }
     }
 
     private class FindAllTask implements Callable<Long> {
         @Override
-        public Long call() throws Exception {
+        public Long call() {
             return timeFindStocks();
         }
     }
